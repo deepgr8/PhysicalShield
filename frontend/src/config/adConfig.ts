@@ -1,14 +1,5 @@
 // AdMob configuration — Android-only integration.
 // iOS keeps the styled fake ad slot per user preference.
-//
-// >>> ACTION REQUIRED BEFORE PUBLISHING <<<
-//   Fill in your Android APP ID in app.json (plugins →
-//   react-native-google-mobile-ads → androidAppId). Format:
-//   `ca-app-pub-5626622356708517~XXXXXXXXXX`. Copy the "~XXXXXXXXXX"
-//   suffix from AdMob → Apps → your Android app → "App ID".
-//
-// Without a valid App ID the Android build will crash on startup because
-// the AdMob SDK requires it during initialization.
 
 import { Platform } from 'react-native';
 
@@ -21,19 +12,21 @@ const TEST_IDS = {
   native: 'ca-app-pub-3940256099942544/2247696110',
 };
 
-// -------- Your production Android ad unit IDs --------
-// Banner + Native are live in your AdMob console.
-// Interstitial + Rewarded fall back to Google test IDs until you create
-// those units in AdMob and paste their /XXXXXXXXXX slugs here.
+// -------- Live Android ad unit IDs --------
+// Banner, Native, and Rewarded are the real production units from your
+// AdMob console (publisher ca-app-pub-5626622356708517).
+// Interstitial is not yet created in your console, so it falls back to
+// Google's test ID — the app currently never triggers an interstitial
+// anyway (no folder-open flow is implemented).
 const PROD_ANDROID_IDS = {
   banner: 'ca-app-pub-5626622356708517/4259340010',
-  interstitial: TEST_IDS.interstitial, // TODO: replace when you create the unit
-  rewarded: TEST_IDS.rewarded,         // TODO: replace when you create the unit
+  interstitial: TEST_IDS.interstitial,
+  rewarded: 'ca-app-pub-5626622356708517/3972253769',
   native: 'ca-app-pub-5626622356708517/8099201038',
 };
 
 // Development uses Google's test IDs. Production uses your real Android IDs.
-// iOS never resolves to real IDs — see FakeAdBanner / RewardedAd guards.
+// iOS never resolves to real IDs — the ad service short-circuits on iOS.
 export const adUnitIDs = __DEV__
   ? TEST_IDS
   : Platform.OS === 'android'

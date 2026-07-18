@@ -64,34 +64,48 @@ frontend/
 
 `react-native-google-mobile-ads@16.4.0` is installed and Metro-split so the
 native module **only loads on Android native builds**. iOS / Expo Go / web
-render the styled fake ad slot in the same footprint — no crashes anywhere.
+render styled fake placements in the same footprint — no crashes anywhere.
+
+### Live production ad units (already plugged in)
+Publisher `ca-app-pub-5626622356708517`:
+
+| Placement    | Ad Unit ID                                        | Where it appears           |
+|--------------|---------------------------------------------------|----------------------------|
+| Banner       | `ca-app-pub-5626622356708517/4259340010`          | Bottom of the launcher     |
+| Native (adv) | `ca-app-pub-5626622356708517/8099201038`          | Inside the notification shade, after the 2nd notification |
+| Rewarded     | `ca-app-pub-5626622356708517/3972253769`          | "Watch to unlock skin" on the Skin store |
+| Interstitial | *(Google test ID — not currently triggered)*      | Reserved for future folder-open flow |
+
+All three real units are in `src/config/adConfig.ts` under
+`PROD_ANDROID_IDS`. In `__DEV__` (Expo Go / dev-client) Google's test IDs
+are used automatically to protect your AdMob account from self-clicks.
+
+### About the Android App ID
+The Android **App ID** in `app.json` is currently Google's public Android
+test App ID (`ca-app-pub-3940256099942544~3347511713`) so the build boots
+without a crash. Your ad units above still generate revenue when they
+render, but SDK-level attribution goes to the test app until you swap
+this. To finalize:
+
+1. Open AdMob → **Apps** → your Android app → copy the **App ID** (format
+   `ca-app-pub-5626622356708517~XXXXXXXXXX`).
+2. In `app.json`, replace the `androidAppId` string inside the
+   `react-native-google-mobile-ads` plugin config.
+3. Rebuild via the Publish button.
+
+If you haven't yet created an "app" entry in AdMob for the Android
+package (`com.emergent.shieldinteract.az4two`), create it first —
+AdMob assigns the App ID at that step.
 
 ### Files
-- `frontend/app.json` — `react-native-google-mobile-ads` config plugin with
-  `androidAppId` (⚠️ **replace `REPLACE_WITH_ANDROID_APP_ID` before shipping**).
-- `frontend/src/config/adConfig.ts` — Android ad unit IDs for banner /
-  interstitial / rewarded. Publisher `ca-app-pub-5626622356708517` prefix is
-  already baked in; replace the three `REPLACE_WITH_ANDROID_*_ID` suffixes.
-- `frontend/src/services/ads/index.tsx` — safe no-op stubs used everywhere
-  except Android.
+- `frontend/app.json` — `react-native-google-mobile-ads` config plugin.
+- `frontend/src/config/adConfig.ts` — all ad unit IDs.
+- `frontend/src/services/ads/index.tsx` — safe no-op stubs (iOS / web / Expo Go).
 - `frontend/src/services/ads/index.android.tsx` — real `mobileAds()`,
-  `BannerAd`, `InterstitialAd`, `RewardedAd` wiring with preload + reload.
+  `BannerAd`, `InterstitialAd`, `RewardedAd`, and `NativeAdCard` wiring.
 
-### Steps to go live (Android)
-1. Create your Android app entry + Ad Units in the AdMob console:
-   - Android App → note its `~XXXXXXXXXX` suffix.
-   - Banner, Interstitial, Rewarded units → note each `/XXXXXXXXXX` suffix.
-2. In `frontend/app.json`, replace `REPLACE_WITH_ANDROID_APP_ID` in the
-   `androidAppId` field.
-3. In `frontend/src/config/adConfig.ts`, replace the three suffixes in the
-   `PROD_ANDROID_IDS` object.
-4. Publish via Emergent's Publish button → generate the Android APK/AAB.
-   Real ads only appear in this native build; the preview / Expo Go will
-   keep showing the styled fake slot.
-
-While `__DEV__` is true (including native dev-client builds) the Google
-public test ad unit IDs are used automatically to prevent AdMob policy
-violations. Never remove them.
+Real ads only appear in a native Android build. Preview & Expo Go will
+keep showing the styled fake slot / sponsored card — expected.
 
 ## Running
 
