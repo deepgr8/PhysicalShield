@@ -1,0 +1,39 @@
+{
+  "summary": "Frontend-only regression test after downgrading react-native-google-mobile-ads from 16.4.0 to 15.6.0 (to fix EAS Android Kotlin metadata mismatch). All preview flows work without any runtime errors: lock unlock, launcher, notification shade + fake sponsor card fallback, skins with simulated rewarded modal, settings, and back navigation. package.json confirmed at exactly '15.6.0'.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Non-blocking (pre-existing, also noted in iteration_3): RN Web deprecation warnings in console for 'textShadow*', 'shadow*', and 'props.pointerEvents'. Not caused by this downgrade.",
+    "Note (from iteration_3): Android APP ID placeholder 'ca-app-pub-5626622356708517~XXXXXXXXXX' in app.json plugins → react-native-google-mobile-ads → androidAppId still needs the real numeric ID before an actual Android production build, otherwise the native build will crash on startup. Unrelated to the downgrade itself, but a reminder for the main agent."
+  ],
+  "critical_code_review_comments": [
+    "package.json line 41 confirmed: 'react-native-google-mobile-ads': '15.6.0' (exact, no ^/~ prefix).",
+    "No source changes required — API surface identical between 15.6.0 and 16.4.0 for BannerAd, NativeAd, RewardedAd, TestIds. Ads service modules (src/services/ads/index.tsx and index.android.tsx) still import cleanly (shade renders, so module resolution succeeded)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only)", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "react-native-google-mobile-ads is pinned at 15.6.0 to keep Kotlin 2.1.x compatible with the EAS builder (avoids play-services-ads:25.4.0 which is Kotlin 2.3). Preview always shows fake fallback UI for ads; real AdMob only fires in an Android native build.",
+  "rca_of_issue": "N/A — regression check passed on all listed test cases.",
+  "detailed_results": {
+    "package_version_pin": "PASS — grep 'react-native-google-mobile-ads' /app/frontend/package.json → line 41: \"react-native-google-mobile-ads\": \"15.6.0\".",
+    "lock_screen": "PASS — lock-unlock-btn present; tapping navigates to /launcher.",
+    "launcher_boot": "PASS — /launcher loads with no red screen; enter-immersive-btn visible with text 'IMMERSIVE'.",
+    "notification_shade_open_close": "PASS — open-shade-btn opens shade; notif-close-btn closes it.",
+    "fake_sponsor_card_fallback": "PASS — testID='fake-native-sponsor-card' visible inside open shade (proves src/services/ads/* module resolves after downgrade).",
+    "skins_screen": "PASS — /skins renders 7 skin cards (6 unlock-* + 1 active-*). Tapping unlock-* opens the simulated rewarded-ad modal with 'REWARDED AD / Watch to unlock skin / AdMob rewarded video · sample / Reward in Ns' countdown visible (screenshot showed 'Reward in 4s'). Confirms useRewardedAd hook shape didn't break.",
+    "settings_screen": "PASS — /settings shows seg-haptic, seg-particle, seg-anim segmented controls and toggle-vibration, toggle-sounds. Back navigation returns to launcher with enter-immersive-btn re-visible.",
+    "runtime_errors": "None. Only pre-existing RN Web deprecation warnings appeared in console."
+  }
+}
