@@ -186,7 +186,7 @@ export function FocusMode({ visible, onExit }: Props) {
       {/* Hint + exit button */}
       <View pointerEvents="box-none" style={styles.hintWrap}>
         <Text style={[styles.hint, { color: `${skin.brand}90` }]}>
-          FOCUS MODE · double-tap or press ✕ to exit
+          IMMERSIVE · double-tap or press ✕ to exit
         </Text>
       </View>
       <Pressable

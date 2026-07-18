@@ -21,6 +21,7 @@ import {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AmbientParticles } from '@/src/components/AmbientParticles';
 import { AmbientWallpaper } from '@/src/components/AmbientWallpaper';
 import { ClockWeatherWidget } from '@/src/components/ClockWeatherWidget';
 import { FakeAdBanner } from '@/src/components/FakeAdBanner';
@@ -42,11 +43,11 @@ interface PageConfig {
 
 // 5 pages of decorative content — feels endless without an actual infinite loop.
 const PAGES: PageConfig[] = [
-  { id: 'p0', widgets: 'clock+music', appStart: 0,  appCount: 8 },
-  { id: 'p1', widgets: 'quick',       appStart: 8,  appCount: 12 },
-  { id: 'p2', widgets: 'none',        appStart: 20, appCount: 12 },
-  { id: 'p3', widgets: 'quick',       appStart: 4,  appCount: 12 },
-  { id: 'p4', widgets: 'clock+music', appStart: 12, appCount: 8 },
+  { id: 'p0', widgets: 'clock+music', appStart: 0,  appCount: 6 },
+  { id: 'p1', widgets: 'quick',       appStart: 6,  appCount: 6 },
+  { id: 'p2', widgets: 'none',        appStart: 12, appCount: 8 },
+  { id: 'p3', widgets: 'quick',       appStart: 20, appCount: 6 },
+  { id: 'p4', widgets: 'clock+music', appStart: 4,  appCount: 6 },
 ];
 
 const DOCK_APPS = ['phone', 'messages', 'browser', 'camera'];
@@ -133,14 +134,32 @@ export default function Launcher() {
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
       <AmbientWallpaper />
+      <AmbientParticles />
 
       <GestureDetector gesture={rootGesture}>
         <View style={{ flex: 1, paddingTop: insets.top }}>
           {/* Top status bar */}
           <View style={styles.topBar}>
-            <Text style={[styles.topBarText, { color: skin.brand }]}>
-              DIGITAL SHIELD
-            </Text>
+            <Pressable
+              onPress={() => {
+                fireHaptic('medium', settings);
+                setFocusOpen(true);
+              }}
+              style={[
+                styles.immersivePill,
+                {
+                  borderColor: skin.brand,
+                  backgroundColor: skin.surfaceSecondary + 'CC',
+                  shadowColor: skin.glow,
+                },
+              ]}
+              testID="enter-immersive-btn"
+            >
+              <Ionicons name="sparkles" size={12} color={skin.brand} />
+              <Text style={[styles.immersivePillText, { color: skin.brand }]}>
+                IMMERSIVE
+              </Text>
+            </Pressable>
             <View style={styles.topBarRight}>
               <Pressable
                 onPress={() => setShadeOpen(true)}
@@ -229,10 +248,10 @@ export default function Launcher() {
             <FakeAdBanner />
           </View>
 
-          {/* Focus mode hint */}
+          {/* Discoverability hint */}
           <View pointerEvents="none" style={styles.focusHint}>
             <Text style={[styles.focusHintText, { color: skin.onSurfaceMuted }]}>
-              double-tap anywhere for focus mode
+              double-tap anywhere for Immersive
             </Text>
           </View>
         </View>
@@ -297,5 +316,43 @@ const styles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 2,
     opacity: 0.7,
+  },
+  immersivePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 5,
+  },
+  immersivePillText: {
+    fontSize: 10,
+    letterSpacing: 2.4,
+    fontWeight: '700',
+  },
+  immersiveBtn: {
+    position: 'absolute',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    shadowOpacity: 0.55,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
+  },
+  immersiveBtnText: {
+    fontSize: 11,
+    letterSpacing: 2.4,
+    fontWeight: '700',
   },
 });

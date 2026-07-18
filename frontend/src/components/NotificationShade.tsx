@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   Platform,
@@ -27,7 +27,7 @@ import {
 import { useTheme } from '@/src/theme/ThemeContext';
 import { fireHaptic } from '@/src/utils/haptics';
 
-const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
+const { height: SCREEN_H_INIT, width: SCREEN_W_INIT } = Dimensions.get('window');
 
 interface Props {
   open: boolean;
@@ -45,54 +45,63 @@ const QUICK = [
 
 export function NotificationShade({ open, onClose }: Props) {
   const { skin, settings } = useTheme();
-  const translateY = useSharedValue(-SCREEN_H);
-  const [items, setItems] = useState<FakeNotification[]>(() => makeNotifications(6));
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+
+  const translateY = useSharedValue(-SCREEN_H_INIT);
+  const [items, setItems] = useState<FakeNotification[]>(() => makeNotifications(4));
 
   useEffect(() => {
-    translateY.value = withSpring(open ? 0 : -SCREEN_H, {
-      damping: 22,
-      stiffness: 180,
+    if (open) {
+      translateY.value = withSpring(0, { damping: 22, stiffness: 200, mass: 0.9 });
+      fireHaptic('strong', settingsRef.current);
+    } else {
+      translateY.value = withTiming(-SCREEN_H_INIT, { duration: 280 });
+    }
+  }, [open, translateY]);
+
+  const closeSmoothly = useCallback(() => {
+    fireHaptic('light', settingsRef.current);
+    translateY.value = withTiming(-SCREEN_H_INIT, { duration: 260 }, (finished) => {
+      if (finished) runOnJS(onClose)();
     });
-    if (open) fireHaptic('strong', settings);
-  }, [open, translateY, settings]);
+  }, [onClose, translateY]);
 
-  const overlayStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  const dismissItem = useCallback(
-    (id: string) => {
-      fireHaptic('success', settings);
-      setItems((prev) => {
-        const next = prev.filter((n) => n.id !== id);
-        // auto-regenerate to keep the panel feeling endless
-        return [...next, makeNotification()];
-      });
-    },
-    [settings],
-  );
+  const dismissItem = useCallback((id: string) => {
+    fireHaptic('success', settingsRef.current);
+    setItems((prev) => {
+      const next = prev.filter((n) => n.id !== id);
+      return [...next, makeNotification()];
+    });
+  }, []);
 
   const clearAll = useCallback(() => {
-    fireHaptic('medium', settings);
-    setItems(makeNotifications(6));
-  }, [settings]);
+    fireHaptic('medium', settingsRef.current);
+    setItems(makeNotifications(4));
+  }, []);
 
-  // Pull-to-close on the top handle
-  const closeGesture = Gesture.Pan()
+  // Pull-to-close on the top drag area. Fires only on upward drag so the
+  // list below can scroll freely without stealing the gesture.
+  const dragCloseGesture = Gesture.Pan()
+    .activeOffsetY([-15, 15])
     .onUpdate((e) => {
       if (e.translationY < 0) {
-        translateY.value = Math.max(-SCREEN_H, e.translationY);
+        translateY.value = Math.max(-SCREEN_H_INIT, e.translationY);
       }
     })
     .onEnd((e) => {
       if (e.translationY < -80 || e.velocityY < -400) {
-        translateY.value = withTiming(-SCREEN_H, { duration: 220 }, () => {
-          runOnJS(onClose)();
+        translateY.value = withTiming(-SCREEN_H_INIT, { duration: 240 }, (finished) => {
+          if (finished) runOnJS(onClose)();
         });
       } else {
-        translateY.value = withSpring(0, { damping: 22, stiffness: 180 });
+        translateY.value = withSpring(0, { damping: 22, stiffness: 200 });
       }
     });
+
+  const overlayStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   const now = new Date();
   const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now
@@ -105,84 +114,19 @@ export function NotificationShade({ open, onClose }: Props) {
     day: 'numeric',
   });
 
-  const shadeContent = useMemo(
-    () => (
-      <>
-        <View style={styles.header}>
-          <View>
-            <Text style={[styles.time, { color: skin.onSurface }]}>{timeStr}</Text>
-            <Text style={[styles.date, { color: skin.onSurfaceMuted }]}>{dateStr}</Text>
-          </View>
-          <Pressable
-            onPress={clearAll}
-            style={[styles.clearBtn, { borderColor: skin.border }]}
-            testID="notif-clear-all"
-          >
-            <Text style={[styles.clearText, { color: skin.brand }]}>CLEAR</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.quickRow}>
-          {QUICK.map((q, i) => (
-            <View
-              key={q.id}
-              style={[
-                styles.quickTile,
-                {
-                  backgroundColor: i < 3 ? skin.brand : skin.surfaceTertiary,
-                  borderColor: i < 3 ? skin.brand : skin.border,
-                  shadowColor: skin.glow,
-                  shadowOpacity: i < 3 ? 0.5 : 0,
-                  shadowRadius: 10,
-                },
-              ]}
-            >
-              <Ionicons
-                name={q.icon as any}
-                size={18}
-                color={i < 3 ? '#000' : skin.onSurface}
-              />
-            </View>
-          ))}
-        </View>
-
-        <Text style={[styles.sectionLabel, { color: skin.onSurfaceMuted }]}>
-          NOTIFICATIONS · {items.length}
-        </Text>
-
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 60 }}
-        >
-          {items.map((n) => (
-            <NotificationRow
-              key={n.id}
-              notif={n}
-              onDismiss={() => dismissItem(n.id)}
-            />
-          ))}
-        </ScrollView>
-      </>
-    ),
-    [items, skin, timeStr, dateStr, clearAll, dismissItem],
-  );
-
   return (
     <Animated.View
       pointerEvents={open ? 'auto' : 'none'}
-      style={[
-        StyleSheet.absoluteFillObject,
-        { zIndex: 100 },
-        overlayStyle,
-      ]}
+      style={[StyleSheet.absoluteFillObject, { zIndex: 100 }, overlayStyle]}
+      testID="notification-shade"
     >
       {Platform.OS !== 'web' ? (
-        <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFillObject} />
+        <BlurView intensity={75} tint="dark" style={StyleSheet.absoluteFillObject} />
       ) : (
         <View
           style={[
             StyleSheet.absoluteFillObject,
-            { backgroundColor: 'rgba(5,5,10,0.92)' },
+            { backgroundColor: 'rgba(5,5,10,0.94)' },
           ]}
         />
       )}
@@ -192,17 +136,87 @@ export function NotificationShade({ open, onClose }: Props) {
           { backgroundColor: `${skin.brand}0A` },
         ]}
       />
-      <View style={[styles.container]}>{shadeContent}</View>
 
-      <GestureDetector gesture={closeGesture}>
-        <View style={styles.handleZone}>
+      {/* Draggable header area — the whole top block responds to pull-to-close */}
+      <GestureDetector gesture={dragCloseGesture}>
+        <View style={styles.headerArea}>
           <View style={[styles.handle, { backgroundColor: skin.borderStrong }]} />
+
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={[styles.time, { color: skin.onSurface }]}>{timeStr}</Text>
+              <Text style={[styles.date, { color: skin.onSurfaceMuted }]}>{dateStr}</Text>
+            </View>
+            <View style={styles.headerButtons}>
+              <Pressable
+                onPress={clearAll}
+                style={[styles.clearBtn, { borderColor: skin.border }]}
+                testID="notif-clear-all"
+              >
+                <Text style={[styles.clearText, { color: skin.brand }]}>CLEAR</Text>
+              </Pressable>
+              <Pressable
+                onPress={closeSmoothly}
+                style={[
+                  styles.closeBtn,
+                  { borderColor: skin.border, backgroundColor: skin.surfaceTertiary },
+                ]}
+                testID="notif-close-btn"
+                hitSlop={12}
+              >
+                <Ionicons name="close" size={18} color={skin.brand} />
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.quickRow}>
+            {QUICK.map((q, i) => (
+              <View
+                key={q.id}
+                style={[
+                  styles.quickTile,
+                  {
+                    backgroundColor: i < 3 ? skin.brand : skin.surfaceTertiary,
+                    borderColor: i < 3 ? skin.brand : skin.border,
+                    shadowColor: skin.glow,
+                    shadowOpacity: i < 3 ? 0.5 : 0,
+                    shadowRadius: 10,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={q.icon as any}
+                  size={18}
+                  color={i < 3 ? '#000' : skin.onSurface}
+                />
+              </View>
+            ))}
+          </View>
+
+          <Text style={[styles.sectionLabel, { color: skin.onSurfaceMuted }]}>
+            NOTIFICATIONS · {items.length}
+          </Text>
         </View>
       </GestureDetector>
 
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        style={styles.scrollList}
+      >
+        {items.map((n) => (
+          <NotificationRow
+            key={n.id}
+            notif={n}
+            onDismiss={() => dismissItem(n.id)}
+          />
+        ))}
+      </ScrollView>
+
+      {/* Full-height tap-to-close backdrop across the remaining bottom area */}
       <Pressable
-        onPress={onClose}
-        style={styles.backdropTap}
+        onPress={closeSmoothly}
+        style={styles.bottomTap}
         testID="notif-shade-backdrop"
       />
     </Animated.View>
@@ -217,33 +231,38 @@ function NotificationRow({
   onDismiss: () => void;
 }) {
   const { skin, settings } = useTheme();
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+
   const tx = useSharedValue(0);
   const opacity = useSharedValue(1);
   const [particles, setParticles] = useState<{ x: number; y: number }[]>([]);
 
-  const emitParticles = () => {
-    const bursts = Array.from({ length: 10 }, () => ({
-      x: (Math.random() - 0.5) * 200,
-      y: (Math.random() - 0.5) * 80,
+  const emitParticles = useCallback(() => {
+    const bursts = Array.from({ length: 8 }, () => ({
+      x: (Math.random() - 0.5) * 180,
+      y: (Math.random() - 0.5) * 60,
     }));
     setParticles(bursts);
-    setTimeout(() => setParticles([]), 500);
-  };
+    setTimeout(() => setParticles([]), 400);
+  }, []);
 
   const gesture = Gesture.Pan()
+    .activeOffsetX([-15, 15])
     .onUpdate((e) => {
       tx.value = e.translationX;
     })
     .onEnd((e) => {
-      if (Math.abs(e.translationX) > SCREEN_W * 0.35) {
-        tx.value = withTiming(e.translationX > 0 ? SCREEN_W : -SCREEN_W, {
-          duration: 180,
-        });
+      if (Math.abs(e.translationX) > SCREEN_W_INIT * 0.32) {
+        tx.value = withTiming(
+          e.translationX > 0 ? SCREEN_W_INIT : -SCREEN_W_INIT,
+          { duration: 180 },
+        );
         opacity.value = withTiming(0, { duration: 180 }, () => {
           runOnJS(onDismiss)();
         });
         runOnJS(emitParticles)();
-        runOnJS(fireHaptic)('success', settings);
+        runOnJS(fireHaptic)('success', settingsRef.current);
       } else {
         tx.value = withSpring(0, { damping: 18, stiffness: 200 });
       }
@@ -267,32 +286,24 @@ function NotificationRow({
             rowStyle,
           ]}
         >
-          <View
-            style={[
-              styles.notifIcon,
-              {
-                backgroundColor: `${notif.color}20`,
-                borderColor: `${notif.color}80`,
-              },
-            ]}
-          >
-            <Ionicons name={notif.icon as any} size={18} color={notif.color} />
-          </View>
+          <View style={[styles.notifDot, { backgroundColor: notif.color }]} />
           <View style={{ flex: 1 }}>
             <View style={styles.notifTitleRow}>
-              <Text style={[styles.notifApp, { color: notif.color }]}>{notif.app}</Text>
+              <Text
+                numberOfLines={1}
+                style={[styles.notifTitle, { color: skin.onSurface }]}
+              >
+                {notif.title}
+              </Text>
               <Text style={[styles.notifTime, { color: skin.onSurfaceMuted }]}>
                 {notif.time}
               </Text>
             </View>
-            <Text style={[styles.notifTitle, { color: skin.onSurface }]}>
-              {notif.title}
-            </Text>
             <Text
               style={[styles.notifBody, { color: skin.onSurfaceMuted }]}
-              numberOfLines={2}
+              numberOfLines={1}
             >
-              {notif.body}
+              {notif.app} · {notif.body}
             </Text>
           </View>
         </Animated.View>
@@ -316,68 +327,93 @@ function NotificationRow({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 60,
-    paddingHorizontal: 16,
+  headerArea: {
+    paddingTop: 20,
+    paddingHorizontal: 20,
   },
-  header: {
+  handle: {
+    alignSelf: 'center',
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    opacity: 0.7,
+    marginTop: 6,
+    marginBottom: 20,
+  },
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     marginBottom: 20,
   },
-  time: { fontSize: 44, fontWeight: '300', letterSpacing: 1 },
-  date: { fontSize: 13, letterSpacing: 1, marginTop: 2 },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  time: { fontSize: 40, fontWeight: '300', letterSpacing: 1 },
+  date: { fontSize: 12, letterSpacing: 1, marginTop: 2 },
   clearBtn: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
   },
   clearText: { fontSize: 10, letterSpacing: 2, fontWeight: '600' },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   quickRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 22,
+    marginBottom: 20,
   },
   quickTile: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     shadowOffset: { width: 0, height: 0 },
   },
   sectionLabel: { fontSize: 10, letterSpacing: 2, marginBottom: 10 },
+  scrollList: { flex: 1, paddingHorizontal: 20 },
+  scrollContent: { paddingBottom: 80 },
   rowWrap: {
     position: 'relative',
-    marginBottom: 10,
+    marginBottom: 8,
     alignItems: 'center',
   },
   notifRow: {
     flexDirection: 'row',
-    padding: 14,
-    borderRadius: 18,
-    borderWidth: 1,
-    alignItems: 'flex-start',
-    gap: 12,
-    width: '100%',
-  },
-  notifIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 10,
+    width: '100%',
   },
-  notifTitleRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  notifApp: { fontSize: 11, fontWeight: '600', letterSpacing: 1.2 },
-  notifTime: { fontSize: 11, letterSpacing: 0.6 },
-  notifTitle: { fontSize: 14, fontWeight: '600', marginTop: 2 },
-  notifBody: { fontSize: 12, marginTop: 3, letterSpacing: 0.3 },
+  notifDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  notifTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  notifTitle: { fontSize: 13, fontWeight: '600', flex: 1 },
+  notifTime: { fontSize: 10, letterSpacing: 0.4 },
+  notifBody: { fontSize: 11, marginTop: 2, letterSpacing: 0.2 },
   particle: {
     position: 'absolute',
     width: 4,
@@ -386,27 +422,11 @@ const styles = StyleSheet.create({
     top: '50%',
     left: '50%',
   },
-  handleZone: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: 8,
-  },
-  handle: {
-    width: 60,
-    height: 4,
-    borderRadius: 2,
-    opacity: 0.6,
-  },
-  backdropTap: {
+  bottomTap: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: 40,
+    height: 60,
   },
 });
