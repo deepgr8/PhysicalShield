@@ -24,6 +24,7 @@ import {
   makeNotification,
   makeNotifications,
 } from '@/src/data/fakeNotifications';
+import { isAdsAvailable, NativeAdCard } from '@/src/services/ads';
 import { useTheme } from '@/src/theme/ThemeContext';
 import { fireHaptic } from '@/src/utils/haptics';
 
@@ -204,12 +205,30 @@ export function NotificationShade({ open, onClose }: Props) {
         contentContainerStyle={styles.scrollContent}
         style={styles.scrollList}
       >
-        {items.map((n) => (
-          <NotificationRow
-            key={n.id}
-            notif={n}
-            onDismiss={() => dismissItem(n.id)}
-          />
+        {items.map((n, idx) => (
+          <React.Fragment key={n.id}>
+            <NotificationRow
+              notif={n}
+              onDismiss={() => dismissItem(n.id)}
+            />
+            {/* Native ad card injected after the 2nd notification. Real
+                AdMob NativeAd on Android; styled fake sponsor card
+                everywhere else. */}
+            {idx === 1 ? (
+              isAdsAvailable ? (
+                <View style={styles.nativeAdSlot}>
+                  <NativeAdCard
+                    accent={skin.brand}
+                    surface={skin.surfaceSecondary}
+                    onSurface={skin.onSurface}
+                    onSurfaceMuted={skin.onSurfaceMuted}
+                  />
+                </View>
+              ) : (
+                <FakeSponsorCard />
+              )
+            ) : null}
+          </React.Fragment>
         ))}
       </ScrollView>
 
@@ -326,6 +345,62 @@ function NotificationRow({
   );
 }
 
+// Styled fake "Sponsored" card shown when real AdMob native ads aren't
+// available (iOS / Expo Go / web). Mirrors the layout of NativeAdCard
+// so the shade looks the same across environments.
+function FakeSponsorCard() {
+  const { skin } = useTheme();
+  return (
+    <View
+      style={[
+        styles.fakeSponsor,
+        {
+          backgroundColor: skin.surfaceSecondary,
+          borderColor: `${skin.brand}30`,
+        },
+      ]}
+      testID="fake-native-sponsor-card"
+    >
+      <View style={styles.fakeSponsorHead}>
+        <View style={[styles.notifDot, { backgroundColor: skin.brand, marginTop: 0 }]} />
+        <Text style={[styles.fakeSponsorTitle, { color: skin.onSurface }]}>
+          Level up your focus with premium widgets
+        </Text>
+        <Text
+          style={[
+            styles.fakeSponsorBadge,
+            { color: skin.brand, borderColor: `${skin.brand}55` },
+          ]}
+        >
+          AD
+        </Text>
+      </View>
+      <Text
+        style={[styles.fakeSponsorBody, { color: skin.onSurfaceMuted }]}
+        numberOfLines={2}
+      >
+        Sponsored placement · Your AdMob Native ad will render here on the
+        Android build.
+      </Text>
+      <View
+        style={[
+          styles.fakeSponsorCta,
+          { borderColor: skin.brand, backgroundColor: `${skin.brand}22` },
+        ]}
+      >
+        <Text
+          style={[
+            styles.fakeSponsorCtaText,
+            { color: skin.brand },
+          ]}
+        >
+          LEARN MORE
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   headerArea: {
     paddingTop: 20,
@@ -429,4 +504,39 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: 60,
   },
+  nativeAdSlot: {
+    marginBottom: 8,
+  },
+  fakeSponsor: {
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 6,
+    marginBottom: 8,
+  },
+  fakeSponsorHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  fakeSponsorTitle: { fontSize: 13, fontWeight: '600', flex: 1 },
+  fakeSponsorBadge: {
+    fontSize: 9,
+    letterSpacing: 1.2,
+    fontWeight: '700',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  fakeSponsorBody: { fontSize: 11, letterSpacing: 0.2 },
+  fakeSponsorCta: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  fakeSponsorCtaText: { fontSize: 10, letterSpacing: 1.8, fontWeight: '700' },
 });

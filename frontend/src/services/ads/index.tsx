@@ -32,3 +32,8 @@ export function useRewardedAd(): RewardedAdController {
 export async function showInterstitial(): Promise<void> {
   /* no-op */
 }
+
+interface NativeAdCardProps { style?: object }
+export function NativeAdCard(_props: NativeAdCardProps): React.ReactElement | null {
+  return null;
+}
