@@ -1,0 +1,179 @@
+{
+  "app_name": "Digital Shield",
+  "personality": "6 Glass / Luxe structure with 7 Dark-First Utility color/typography",
+  "personality_one_liner": "A premium, glassmorphic neural interface that feels tangibly futuristic, combining cinematic depth with high-contrast cyberpunk utility.",
+  "color": {
+    "surface": "#05050A",
+    "onSurface": "#FFFFFF",
+    "surfaceSecondary": "#10121A",
+    "onSurfaceSecondary": "#B0B5C9",
+    "surfaceTertiary": "#1A1D2A",
+    "onSurfaceTertiary": "#8B92A5",
+    "surfaceInverse": "#E0E5FF",
+    "onSurfaceInverse": "#05050A",
+    "brand": "#00E5FF",
+    "brandPrimary": "#00E5FF",
+    "onBrandPrimary": "#000000",
+    "brandSecondary": "#B026FF",
+    "onBrandSecondary": "#FFFFFF",
+    "brandTertiary": "#00E5FF15",
+    "onBrandTertiary": "#00E5FF",
+    "success": "#00FF41",
+    "onSuccess": "#000000",
+    "warning": "#FFB300",
+    "onWarning": "#000000",
+    "error": "#FF003C",
+    "onError": "#FFFFFF",
+    "info": "#00E5FF",
+    "onInfo": "#000000",
+    "border": "#00E5FF30",
+    "borderStrong": "#00E5FF80",
+    "divider": "#FFFFFF15"
+  },
+  "typography": {
+    "displayFontFamily": "Rajdhani",
+    "textFontFamily": "Space Grotesk",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Use an 8px base grid. 8-12px for tight grouping, 24px+ for margins and card padding. Ensure 44x44pt touch targets with proper inactive space.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "1",
+  "navigation": "stack_only",
+  "icon_set": "Ionicons",
+  "glassmorphism": {
+    "enabled": "true",
+    "do's": [
+      "Use backdrop-filter blur on the Notification Shade, Lock Screen overlay, Widgets, and Dock.",
+      "Apply a 5-10% neon tint overlay to glass panels to reflect the ambient environment.",
+      "Use 1px semi-transparent neon borders (borderStrong/border) to create a frosted, luminous edge.",
+      "Stack translucent layers to build cinematic depth (foreground neon UI, midground glass panels, background dark wallpaper)."
+    ],
+    "dont's": [
+      "Do not use pure white or gray for glass; always use dark, neon-tinted translucency.",
+      "Do not apply glass behind dense body text or settings toggles.",
+      "Do not use generic drop shadows; use neon glow shadows (same color as element + blur/spread) for active/illuminated states."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "LockScreen",
+      "purpose": "AOD / Lock Screen simulator with ambient particle wallpaper, large clock, and fake unlocking interaction.",
+      "states": {
+        "loading": "N/A",
+        "empty": "N/A",
+        "error": "N/A"
+      },
+      "layout": "Full-bleed ambient wallpaper. Oversized display clock at the top third using displayFontFamily (Rajdhani). Subtle 'swipe to unlock' glow chevron at the bottom. Lock icon and quick shortcuts (camera/flashlight) in bottom corners. Background is slightly dimmed until interaction."
+    },
+    {
+      "name": "InfiniteLauncher",
+      "purpose": "Endless scrolling fake desktop (horizontal/vertical) with grid layout of icons, folders, and widgets.",
+      "states": {
+        "loading": "N/A",
+        "empty": "N/A",
+        "error": "N/A"
+      },
+      "layout": "Edge-to-edge transparent background. 4x6 grid of app icons (rounded squares with inner gradients and thin neon borders). A fixed frosted-glass Dock at the bottom. Floating page indicators above the dock. Fake AdMob banner sticky at the bottom edge. Widgets placed randomly on the grid occupying 2x2 or 4x2 spaces."
+    },
+    {
+      "name": "NotificationShade",
+      "purpose": "Pull-down glass panel generating endless fake system notifications with swipe-to-dismiss.",
+      "states": {
+        "loading": "N/A",
+        "empty": "Glass panel reading 'System Optimized. All clear.'",
+        "error": "N/A"
+      },
+      "layout": "Full-screen translucent glassmorphic overlay dragging down from the top. Top header contains quick-settings circles (WiFi, Bluetooth, Battery). Below is a scrolling list of notification cards (surfaceSecondary with border styling). Swiping a card triggers a particle explosion. Date and large clock embedded at the top."
+    },
+    {
+      "name": "FocusMode",
+      "purpose": "Interactive particle playground activated by double-tap.",
+      "states": {
+        "loading": "N/A",
+        "empty": "N/A",
+        "error": "N/A"
+      },
+      "layout": "Pure AMOLED black background (#000000). All UI vanishes. Interactive canvas capturing gestures to drive react-native-skia fluid particles, energy waves, and constellation dots. Follows multi-touch. Hidden 'exit' button (double-tap again to close)."
+    },
+    {
+      "name": "SkinStoreAndSettings",
+      "purpose": "Rewarded ad store to unlock themes and sliders for haptic/particle tuning.",
+      "states": {
+        "loading": "Spinner using brand color",
+        "empty": "N/A",
+        "error": "Message 'Connection lost' with 'Retry' button"
+      },
+      "layout": "Scrollable list of Premium Skins displayed as large glass cards showing a preview image, skin name, and an 'Unlock / Active' pill button. Below skins, a 'Settings' section with branded sliders (haptic intensity, particle density) and segmented controls for particle style."
+    }
+  ],
+  "haptics": {
+    "launcher_swipe": "light",
+    "icon_press": "medium",
+    "notification_pull": "heavy",
+    "notification_dismiss": "success",
+    "focus_mode_toggle": "rigid",
+    "particle_spawn": "selection",
+    "slider_move": "selection"
+  },
+  "images": {
+    "ambient_wallpaper_blue": {
+      "url": "https://images.pexels.com/photos/10827983/pexels-photo-10827983.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "dark": "https://images.pexels.com/photos/10827983/pexels-photo-10827983.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Cyber Blue ambient particle waves"
+    },
+    "ambient_wallpaper_purple": {
+      "url": "https://images.unsplash.com/photo-1643139863038-7355941e9e89?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzZ8MHwxfHNlYXJjaHwyfHxkYXJrJTIwYWJzdHJhY3QlMjBnbGFzc21vcnBoaXNtJTIwM2QlMjBzaGFwZSUyMGFtYmllbnR8ZW58MHx8fHwxNzg0MzU5MTI0fDA&ixlib=rb-4.1.0&q=85",
+      "dark": "https://images.unsplash.com/photo-1643139863038-7355941e9e89?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzZ8MHwxfHNlYXJjaHwyfHxkYXJrJTIwYWJzdHJhY3QlMjBnbGFzc21vcnBoaXNtJTIwM2QlMjBzaGFwZSUyMGFtYmllbnR8ZW58MHx8fHwxNzg0MzU5MTI0fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Neon Purple dark glassmorphism swirls"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Premium Skin Palettes (Implement via dynamic theme context):",
+    "1. Cyber Blue (Default): brand #00E5FF, borderStrong #00E5FF80, surfaceInverse #E0E5FF",
+    "2. Matrix Green: brand #00FF41, borderStrong #00FF4180, surfaceInverse #E0FFEA",
+    "3. Neon Purple: brand #B026FF, borderStrong #B026FF80, surfaceInverse #F4E0FF",
+    "4. Glass White: brand #F0F5FF, borderStrong #F0F5FF80, surfaceInverse #FFFFFF",
+    "5. Amber: brand #FFB300, borderStrong #FFB30080, surfaceInverse #FFF2E0",
+    "6. Dark Red: brand #FF003C, borderStrong #FF003C80, surfaceInverse #FFE0E5",
+    "7. Gold: brand #FFD700, borderStrong #FFD70080, surfaceInverse #FFFBE0",
+    "Widget Specs: Use a 4x2 grid block for the main Clock/Weather widget. Design it with heavy glass blur, a prominent Rajdhani time display, and a neon-glowing outline. Music widget (2x2) with concentric circular visualizers.",
+    "Icon Strategy: Create ~20 generic premium icons (e.g., mail, camera, settings, secure vault, terminal, scanner). Use a dark surface tertiary base with neon gradients for the glyphs.",
+    "Notification Shade: Must use 'expo-blur' (intensity ~70) with a 5% brand overlay color. Ensure swiping to dismiss triggers a react-native-reanimated layout transition AND a small burst of particles (via skia/lottie) with haptic success.",
+    "Focus Mode: This is the core 'fidget' mechanic. Ensure react-native-skia particle rendering operates at 120fps. Double-tap to enter/exit. Use pan gesture handlers to trail particles on drag.",
+    "Glow Effects: Use 'box-shadow' with large blur radius and the brand color at ~30% opacity on active elements, replacing standard material drop shadows.",
+    "Animations: Use Reanimated with quick springs (damping 15, stiffness 150) for widget bounces and Notification shade pull.",
+    "Include the fake AdMob banner space smoothly into the layout so it doesn't break the infinite scrolling mechanics."
+  ]
+}
