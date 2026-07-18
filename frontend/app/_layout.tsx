@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useIconFonts } from '@/src/hooks/use-icon-fonts';
+import { initializeAds } from '@/src/services/ads';
 import { ThemeProvider } from '@/src/theme/ThemeContext';
 
 // Disable logbox errors etc so that users can see the app
@@ -27,6 +28,11 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded, error]);
+
+  useEffect(() => {
+    // Fire-and-forget: no-op on iOS / web / Expo Go, initializes AdMob on Android native builds.
+    initializeAds();
+  }, []);
 
   // If the CDN is unreachable we fall through on error rather than wedging
   // the app — icons will tofu, but the app still boots.

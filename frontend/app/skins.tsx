@@ -14,13 +14,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AmbientWallpaper } from '@/src/components/AmbientWallpaper';
 import { GlassCard } from '@/src/components/GlassCard';
+import { isAdsAvailable, useRewardedAd } from '@/src/services/ads';
 import { SKINS, useTheme } from '@/src/theme/ThemeContext';
 import { SkinId } from '@/src/theme/skins';
 import { fireHaptic } from '@/src/utils/haptics';
 
-// The Skin Store. Users unlock skins via a mocked "rewarded ad" flow.
-// In a native build with react-native-google-mobile-ads, replace the
-// simulated wait with an actual RewardedAd + onRewardEarned callback.
+// The Skin Store. Users unlock skins via a rewarded ad.
+// - Android native build → real AdMob RewardedAd fires and, on reward
+//   earned, we unlock + apply the target skin.
+// - Elsewhere (iOS / Expo Go / web) → a simulated 5-second countdown modal
+//   still lets users try the flow without native modules.
 export default function Skins() {
   const {
     skin,
@@ -32,13 +35,30 @@ export default function Skins() {
   } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const rewarded = useRewardedAd();
   const [adState, setAdState] = useState<
     | { open: false }
     | { open: true; target: SkinId; countdown: number }
   >({ open: false });
 
-  const startRewardedAd = (target: SkinId) => {
+  const grantSkin = (target: SkinId) => {
+    unlockSkin(target);
+    setSkin(target);
+    fireHaptic('success', settings);
+  };
+
+  const startRewardedAd = async (target: SkinId) => {
     fireHaptic('medium', settings);
+
+    // Real AdMob path (Android native build with a ready-loaded ad).
+    if (isAdsAvailable && rewarded.isReady) {
+      const { earned } = await rewarded.show();
+      if (earned) grantSkin(target);
+      return;
+    }
+
+    // Fallback simulated flow — used on iOS / Expo Go / web, and also if
+    // the real rewarded ad hasn't loaded in time.
     setAdState({ open: true, target, countdown: 5 });
     const startedAt = Date.now();
     const tick = setInterval(() => {
@@ -46,9 +66,7 @@ export default function Skins() {
       const remaining = 5 - elapsed;
       if (remaining <= 0) {
         clearInterval(tick);
-        unlockSkin(target);
-        setSkin(target);
-        fireHaptic('success', settings);
+        grantSkin(target);
         setAdState({ open: false });
       } else {
         setAdState({ open: true, target, countdown: remaining });

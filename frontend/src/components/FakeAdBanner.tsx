@@ -1,18 +1,32 @@
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
+import { isAdsAvailable, REAL_BANNER_HEIGHT, RealBannerAd } from '@/src/services/ads';
 import { useTheme } from '@/src/theme/ThemeContext';
-import { USE_FAKE_AD_SLOT } from '@/src/config/adConfig';
 
-// Bottom-anchored fake AdMob banner slot.
-// In a native build, replace the inner <View> with the <BannerAd/> from
-// react-native-google-mobile-ads using the IDs in src/config/adConfig.ts.
+// Bottom-anchored ad slot.
+// Android native build → renders real AdMob BannerAd.
+// Everywhere else (iOS / Expo Go / web) → renders a styled fake ad slot
+// that occupies the same footprint so the launcher chrome stays consistent.
 export function FakeAdBanner({ height = 56 }: { height?: number }) {
   const { skin } = useTheme();
 
-  if (!USE_FAKE_AD_SLOT) {
-    // In native build this branch should be swapped with <BannerAd />
-    return null;
+  if (isAdsAvailable) {
+    return (
+      <View
+        testID="admob-banner-slot"
+        style={[
+          styles.realBannerWrap,
+          {
+            height: Math.max(height, REAL_BANNER_HEIGHT),
+            borderColor: skin.border,
+            backgroundColor: skin.surfaceSecondary,
+          },
+        ]}
+      >
+        <RealBannerAd />
+      </View>
+    );
   }
 
   return (
@@ -49,6 +63,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     paddingHorizontal: 12,
     gap: 10,
+  },
+  realBannerWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
   },
   dot: { width: 8, height: 8, borderRadius: 4 },
   title: { fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },

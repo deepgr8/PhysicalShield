@@ -60,20 +60,38 @@ frontend/
     └── utils/           # storage, haptics
 ```
 
-## AdMob setup
+## AdMob (Android only)
 
-All AdMob configuration lives in `src/config/adConfig.ts`. Placeholder IDs
-are clearly marked with `YOUR_ADMOB_*_HERE`.
+`react-native-google-mobile-ads@16.4.0` is installed and Metro-split so the
+native module **only loads on Android native builds**. iOS / Expo Go / web
+render the styled fake ad slot in the same footprint — no crashes anywhere.
 
-In Expo Go / preview we render a styled fake ad slot in the same footprint
-as the real banner (`FakeAdBanner.tsx`). To ship real ads:
+### Files
+- `frontend/app.json` — `react-native-google-mobile-ads` config plugin with
+  `androidAppId` (⚠️ **replace `REPLACE_WITH_ANDROID_APP_ID` before shipping**).
+- `frontend/src/config/adConfig.ts` — Android ad unit IDs for banner /
+  interstitial / rewarded. Publisher `ca-app-pub-5626622356708517` prefix is
+  already baked in; replace the three `REPLACE_WITH_ANDROID_*_ID` suffixes.
+- `frontend/src/services/ads/index.tsx` — safe no-op stubs used everywhere
+  except Android.
+- `frontend/src/services/ads/index.android.tsx` — real `mobileAds()`,
+  `BannerAd`, `InterstitialAd`, `RewardedAd` wiring with preload + reload.
 
-1. Set `USE_FAKE_AD_SLOT = false` in `src/config/adConfig.ts`.
-2. Install `react-native-google-mobile-ads` in a native build.
-3. Replace the fake banner's inner view with `<BannerAd />` using the
-   platform-appropriate ad unit ID.
-4. Wire the "Unlock" flow in `app/skins.tsx` to `RewardedAd` instead of
-   the simulated 5-second countdown.
+### Steps to go live (Android)
+1. Create your Android app entry + Ad Units in the AdMob console:
+   - Android App → note its `~XXXXXXXXXX` suffix.
+   - Banner, Interstitial, Rewarded units → note each `/XXXXXXXXXX` suffix.
+2. In `frontend/app.json`, replace `REPLACE_WITH_ANDROID_APP_ID` in the
+   `androidAppId` field.
+3. In `frontend/src/config/adConfig.ts`, replace the three suffixes in the
+   `PROD_ANDROID_IDS` object.
+4. Publish via Emergent's Publish button → generate the Android APK/AAB.
+   Real ads only appear in this native build; the preview / Expo Go will
+   keep showing the styled fake slot.
+
+While `__DEV__` is true (including native dev-client builds) the Google
+public test ad unit IDs are used automatically to prevent AdMob policy
+violations. Never remove them.
 
 ## Running
 
