@@ -67,14 +67,6 @@ native module **only loads on Android native builds**. iOS / Expo Go / web
 render styled fake placements in the same footprint — no crashes anywhere.
 
 ### Live production ad units (already plugged in)
-Publisher `ca-app-pub-5626622356708517`:
-
-| Placement    | Ad Unit ID                                        | Where it appears           |
-|--------------|---------------------------------------------------|----------------------------|
-| Banner       | `ca-app-pub-5626622356708517/4259340010`          | Bottom of the launcher     |
-| Native (adv) | `ca-app-pub-5626622356708517/8099201038`          | Inside the notification shade, after the 2nd notification |
-| Rewarded     | `ca-app-pub-5626622356708517/3972253769`          | "Watch to unlock skin" on the Skin store |
-| Interstitial | *(Google test ID — not currently triggered)*      | Reserved for future folder-open flow |
 
 All three real units are in `src/config/adConfig.ts` under
 `PROD_ANDROID_IDS`. In `__DEV__` (Expo Go / dev-client) Google's test IDs
